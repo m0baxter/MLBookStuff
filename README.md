@@ -1,2 +1,2 @@
 # MLBookStuff
-Solutions to prooblems and projects from *Hnds-on Machine Learing with Scikit-learn and TensorFlow*, by Aurélien Géron.
+Solutions to problems and projects from *Hands-on Machine Learning with Scikit-learn and TensorFlow*, by Aurélien Géron.
