@@ -23,7 +23,7 @@ def mnistCNN( X, y, trn, alpha = 0.01, momentum = 0.9, bnm = 0.9 ):
 
         pad = tf.image.resize_image_with_crop_or_pad( X, 32, 32 )
 
-        conv1 = tf.layers.conv2d( pad, filters = 4, kernel_size = 5, strides = 1,
+        conv1 = tf.layers.conv2d( pad, filters = 6, kernel_size = 5, strides = 1,
                                   padding = "SAME", name = "conv1" )
         bn1 = tf.layers.batch_normalization( conv1, training = trn, momentum = bnm )
         bnAct1 = tf.nn.elu( bn1 )
@@ -31,7 +31,7 @@ def mnistCNN( X, y, trn, alpha = 0.01, momentum = 0.9, bnm = 0.9 ):
         pool1 = tf.layers.average_pooling2d( bnAct1, pool_size = 2,
                                              strides = 2, name = "pool1" )
 
-        conv2 = tf.layers.conv2d( pool1, filters = 8, kernel_size = 5, strides = 1,
+        conv2 = tf.layers.conv2d( pool1, filters = 16, kernel_size = 5, strides = 1,
                                   padding = "SAME", name = "conv2" )
         bn2 = tf.layers.batch_normalization( conv2, training = trn, momentum = bnm )
         bnAct2 = tf.nn.elu( bn2 )
@@ -39,20 +39,20 @@ def mnistCNN( X, y, trn, alpha = 0.01, momentum = 0.9, bnm = 0.9 ):
         pool2 = tf.layers.average_pooling2d( bnAct2, pool_size = 2,
                                              strides = 2, name = "pool2" )
 
-        conv3 = tf.layers.conv2d( pool2, filters = 8, kernel_size = 1, strides = 1,
+        conv3 = tf.layers.conv2d( pool2, filters = 120, kernel_size = 1, strides = 1,
                                   padding = "SAME", name = "conv3" )
         bn3 = tf.layers.batch_normalization( conv3, training = trn, momentum = bnm )
         bnAct3 = tf.nn.elu( bn3 )
 
         flat = tf.layers.flatten( bnAct3 )
 
-        fc1 = tf.layers.dense( flat, 10, name = "fc1", activation = tf.nn.elu,
+        fc1 = tf.layers.dense( flat, 84, name = "fc1", activation = tf.nn.elu,
                                kernel_initializer = tf.keras.initializers.he_normal() )
 
         logits = tf.layers.dense( fc1, 10, name = "output" )
 
     with tf.name_scope("loss"):
-        crossEnt = tf.nn.sparse_softmax_cross_entropy_with_logits( labels = y, logits = logits)
+        crossEnt = tf.nn.sparse_softmax_cross_entropy_with_logits( labels = y, logits = logits )
         loss = tf.reduce_mean( crossEnt, name = "loss" )
 
     with tf.name_scope("eval"):
@@ -168,11 +168,11 @@ def hyperparameterSearch( trainX, trainY, paramsList, k ):
             bestLoss = valLoss
             bestParams = params
 
-        print("Done {0} of {1} in {2}s".format(modelID + 1, len(paramsList), t2 - t1),
+        print("Done {0:4d} of {1:4d} in {2:4.1f}s".format(modelID + 1, len(paramsList), t2 - t1),
               "Validation loss:", valLoss )
         modelID += 1
 
-    trX, valX, trY, valY = train_test_split( trainX, trainY, test_size = 10000,
+    trX, valX, trY, valY = train_test_split( trainX, trainY, test_size = 5000,
                                                    random_state = 123 )
 
     loVal, trHist, valHist = trainModel( trX, trY, valX, valY, bestParams, saveModel = True )
