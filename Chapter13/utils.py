@@ -16,7 +16,7 @@ def genBatch( X, y, batchSize ):
 
         yield X[ inds[start : start + batchSize] ], y[ inds[start : start + batchSize] ]
 
-def mnistCNN( X, y, trn, alpha = 0.01, momentum = 0.9, bnm = 0.9 ):
+def mnistCNN( X, y, trn, alpha = 0.001, b1 = 0.9, b2 = 0.999, bnm = 0.9 ):
 
     with tf.name_scope( "cnn" ):
         #LeNet: 6, 16, 120, FC: 84
@@ -25,24 +25,27 @@ def mnistCNN( X, y, trn, alpha = 0.01, momentum = 0.9, bnm = 0.9 ):
 
         conv1 = tf.layers.conv2d( pad, filters = 6, kernel_size = 5, strides = 1,
                                   padding = "SAME", name = "conv1" )
-        bn1 = tf.layers.batch_normalization( conv1, training = trn, momentum = bnm )
-        bnAct1 = tf.nn.elu( bn1 )
+        #bn1 = tf.layers.batch_normalization( conv1, training = trn, momentum = bnm )
+        #bnAct1 = tf.nn.elu( bn1 )
+        bnAct1 = tf.nn.elu( conv1 )
 
         pool1 = tf.layers.average_pooling2d( bnAct1, pool_size = 2,
                                              strides = 2, name = "pool1" )
 
         conv2 = tf.layers.conv2d( pool1, filters = 16, kernel_size = 5, strides = 1,
                                   padding = "SAME", name = "conv2" )
-        bn2 = tf.layers.batch_normalization( conv2, training = trn, momentum = bnm )
-        bnAct2 = tf.nn.elu( bn2 )
+        #bn2 = tf.layers.batch_normalization( conv2, training = trn, momentum = bnm )
+        #bnAct2 = tf.nn.elu( bn2 )
+        bnAct2 = tf.nn.elu( conv2 )
 
         pool2 = tf.layers.average_pooling2d( bnAct2, pool_size = 2,
                                              strides = 2, name = "pool2" )
 
         conv3 = tf.layers.conv2d( pool2, filters = 120, kernel_size = 1, strides = 1,
                                   padding = "SAME", name = "conv3" )
-        bn3 = tf.layers.batch_normalization( conv3, training = trn, momentum = bnm )
-        bnAct3 = tf.nn.elu( bn3 )
+        #bn3 = tf.layers.batch_normalization( conv3, training = trn, momentum = bnm )
+        #bnAct3 = tf.nn.elu( bn3 )
+        bnAct3 = tf.nn.elu( conv3 )
 
         flat = tf.layers.flatten( bnAct3 )
 
@@ -60,9 +63,8 @@ def mnistCNN( X, y, trn, alpha = 0.01, momentum = 0.9, bnm = 0.9 ):
         accuracy = tf.reduce_mean( tf.cast(correct, tf.float32) )
 
     with tf.name_scope("train"):
-        opt = tf.train.MomentumOptimizer( learning_rate = alpha,
-                                          momentum = momentum,
-                                          use_nesterov = True )
+        opt = tf.train.AdamOptimizer( learning_rate = alpha,
+                                      beta1 = b1, beta2 = b2 )
         training = opt.minimize( loss )
         lossSummary = tf.summary.scalar("crossEntropy", loss)
 
@@ -102,11 +104,11 @@ def trainModel( trainX, trainY, valX, valY, params, saveModel = False ):
         for epoch in range(nEpochs):
             for batchX, batchY in genBatch( trainX, trainY, batchSize ):
 
-                sess.run( training, feed_dict = { X : batchX, y : batchY } )
+                sess.run( training, feed_dict = { X : batchX, y : batchY, trn : True } )
                 step += 1
 
                 if ( step % 50 == 0 ):
-                    valLoss = loss.eval( feed_dict = { X : valX, y : valY, trn : True } )
+                    valLoss = loss.eval( feed_dict = { X : valX, y : valY } )
 
                     if ( valLoss < loVal ):
                         loVal = valLoss
@@ -127,7 +129,7 @@ def trainModel( trainX, trainY, valX, valY, params, saveModel = False ):
             else:
                 patience += 1
 
-            if ( patience >= 50):
+            if ( patience >= 20):
                 break
 
         if (saveModel):
@@ -178,4 +180,3 @@ def hyperparameterSearch( trainX, trainY, paramsList, k ):
     loVal, trHist, valHist = trainModel( trX, trY, valX, valY, bestParams, saveModel = True )
 
     return ( loVal, trHist, valHist, bestParams )
-
